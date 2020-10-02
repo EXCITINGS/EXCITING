@@ -1,0 +1,128 @@
+import speech_recognition as sr
+import pyttsx3
+from datetime import datetime as dt
+import pyaudio
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+import random
+
+def MOM() :
+
+    df = pd.DataFrame( pd.read_excel( "X.xlsx", "DATA" ) )
+    column_count = len( df.columns )
+    name_array = []
+    
+    for i in range( column_count ) : 
+        name_array.append( df.columns[i] )
+    
+    row_count = len( df[name_array[0]] )
+
+    date = dt.now()
+    engine = pyttsx3.init()
+    
+    win = 0
+
+    for start in range( row_count ) :
+        q_keyword = str( df[name_array[1]][start] )
+        
+        try :
+            print("----------------------------------------------------------------------")
+            print("<",row_count+1,"번째 중", start+1, "번",">")
+
+            req = requests.get("https://terms.naver.com/search.nhn?query=" + q_keyword + "&searchType=text")
+            # req = requests.get("https://ko.wikipedia.org/wiki/" + q_keyword)
+            html = req.text
+
+            soup = BeautifulSoup(html, 'html.parser')
+
+            a_list = soup.select("#content > div > div.search_group > h4 > strong > a")
+            a_list_cnt = 0
+
+            for o in range( len(a_list) ) : #a_list :
+                if a_list[o].string == q_keyword :
+                    a_list_cnt = o+2
+
+            try :
+                desc = str( soup.select_one("#content > div:nth-of-type(" + str(a_list_cnt) + ") > div.search_group > h4 > span").text )
+                print("문제 :", desc)
+            except : 
+                desc = str( soup.select_one("#content > div:nth-of-type(" + str(a_list_cnt-1) + ") > div.search_group > h4 > span").text )
+                print("문제 :", desc)
+            
+
+            rand_cnt = []
+
+            for l in range( 4 ) :
+                c = random.randint(0, 600)
+                if start == c or c in rand_cnt :
+                    pass
+                else :
+                    rand_cnt.append( c )
+            rand_cnt.append( start )
+
+            # 보기
+            random.shuffle( rand_cnt )
+            
+            for k in range( len(rand_cnt) ) :
+                print( k+1, "번 보기 :", df[name_array[1]][rand_cnt[k]] )
+            
+
+            answer = ""
+
+            while True :
+                try :
+                    answer = int(input("정답 : "))
+                    break
+
+                    if "그만" in myText :
+                        engine.say("학습종료하겠습니다.")
+                        engine.runAndWait()
+                        break
+            
+                except Exception as error :
+                    print( "말씀해주세요. 기다리겠습니다." )
+                    continue
+
+            good_answer = str(df[name_array[1]][start])
+            your_answer = str(df[name_array[1]][rand_cnt[answer-1]])
+
+            if good_answer == your_answer :
+                # print( "기존의 정답 : ", good_answer )
+                # print( "당신의 정답 : ", your_answer )
+                print( "정답입니다.", q_keyword )
+                win += 1
+                
+            else :
+                # print( "기존의 정답 : ", good_answer )
+                # print( "당신의 정답 : ", your_answer )
+                print( "틀렸습니다. 정답은", q_keyword )
+
+            print("----------------------------------------------------------------------")
+
+        except Exception as error :
+            pass
+
+    if 500 <= win :
+        print("----------------------------------------------------------------------")
+        print("-- 선현자 여사는 매우 우수한 실력을 가지고 있습니다 --")
+        print("----------------------------------------------------------------------")
+    elif 300 <= win and 499 >= win :
+        print("----------------------------------------------------------------------")
+        print("-- 선현자 여사는 우수한 실력을 가지고 있습니다 --")
+        print("-- 더욱 노력해서, 매우 우수한 실력을 갖춰 보세요 --")
+        print("----------------------------------------------------------------------")
+    elif 150 <= win and 299 >= win :
+        print("----------------------------------------------------------------------")
+        print("-- 선현자 여사는 부족한 실력을 가지고 있습니다 --")
+        print("-- 매우 노력해서, 우수한 실력을 갖춰 보세요 --")
+        print("----------------------------------------------------------------------")
+    elif 140 >= win :
+        print("----------------------------------------------------------------------")
+        print("-- 선현자 여사는 매우 부족한 실력을 가지고 있습니다 --")
+        print("-- 심각하게 노력해서, 부족한 실력을 갖춰 보세요 --")
+        print("----------------------------------------------------------------------")
+
+
+if __name__ == "__main__" :
+    MOM()
